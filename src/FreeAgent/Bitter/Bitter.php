@@ -43,7 +43,7 @@ class Bitter
     /**
      * Set the Redis client
      *
-     * @param [type] $newredisClient The Redis client
+     * @param object $newredisClient The Redis client
      */
     public function setRedisClient($redisClient)
     {
@@ -188,6 +188,58 @@ class Bitter
         $this->getRedisClient()->expire($destKey, $this->expireTimeout);
 
         return $this;
+    }
+
+    /**
+     * Returns the ids of an key or event
+     *
+     * @param  mixed   $key The key or the event
+     * @return array   The ids array
+     */
+    public function getIds($key)
+    {
+        $key = $key instanceof EventInterface ? $this->prefixKey . $key->getKey() : $this->prefixTempKey . $key;
+
+        $string = $this->getRedisClient()->get($key);
+
+        $data = $this->bitsetToString($string);
+
+        $ids = array();
+        while (false !== ($pos = strpos($data, '1'))) {
+            $data[$pos] = 0;
+            $ids[]  = (int)($pos/8)*8 + abs(7-($pos%8));
+        }
+
+        sort($ids);
+
+        return $ids;
+    }
+
+    protected function bitsetToString($bitset = '')
+    {
+        return bitset_to_string($string);
+        // int len = 0;
+        // unsigned char *bitset_data, *output_str;
+        // long count;
+
+        // if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &bitset_data, &len) == FAILURE) {
+        //     return;
+        // }
+
+        // php_error_docref(NULL TSRMLS_CC, E_DEPRECATED, BITSET_DEPRECATED_MESSAGE);
+
+        // if (len == 0) {
+        //     RETURN_EMPTY_STRING();
+        // } else {
+        //     len *= CHAR_BIT;
+        //     output_str = emalloc(len+1);
+        //     output_str[len] = '\0';
+        //     for (count = 0; count < len; count++) {
+        //         output_str[count] = ((bitset_data[count/CHAR_BIT] >> (count % CHAR_BIT)) & 1) ? '1' : '0';
+        //     }
+
+        //     RETURN_STRINGL((char *) output_str, len, 0);
+        // }
     }
 
     /**
